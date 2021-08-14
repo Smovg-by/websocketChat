@@ -1,25 +1,52 @@
-import logo from './logo.svg';
 import './App.css';
+import {useEffect, useRef, useState} from "react";
 
-function App() {
+export function App() {
+
+  let messagesBlockRef = useRef()
+
+  const [ws, setWs] = useState(null)
+  const [message, setMessage] = useState('')
+  const [users, setUsers] = useState([])
+
+  if (ws) {
+    ws.onmessage = (messageEvent) => {
+      let messages = JSON.parse(messageEvent.data)
+      setUsers([...users, ...messages])
+      messagesBlockRef.current.scrollTo(0, messagesBlockRef.current.scrollHeight) // автоскролл при появлении нового сообщения
+    }
+  }
+
+  useEffect(() => {
+    let localWS = new WebSocket('wss://social-network.samuraijs.com/handlers/ChatHandler.ashx') // объект websocket
+    setWs(localWS)
+  }, [])
+
+  const onChange = (e) => {
+    setMessage(e.currentTarget.value)
+  }
+
+  const sendMessage = () => {
+    ws.send(message)
+    setMessage('')
+  }
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <div className={"chat"}>
+        <div className={"messages"} ref={messagesBlockRef}>
+          {users.map((u, index) => {
+            return (<div key={index} className={"message"}>
+              <img src={u.photo}/><b>{u.userName} </b><span>{u.message}</span>
+            </div>)
+          })}
+        </div>
+        <div className={"footer"}>
+          <textarea value={message} onChange={onChange}/>
+          <button onClick={sendMessage}>Send message</button>
+        </div>
+      </div>
     </div>
   );
 }
 
-export default App;
